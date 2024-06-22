@@ -65,32 +65,43 @@ const deleteUserById = async (req, res) => {
     res.status(500).json({error: "delete user failed!"})
   }
 };
-
 const updateUserById = async (req, res) => {
-    const id = req.params.id
-    const {name, email, password, numberPhone, age} = req.body
+    const id = req.params.id;
+    const { name, email, password, numberPhone, age } = req.body;
 
     try {
-        const users = await User.findByPk(id)
-
-        if(!name) {
-            return res.status(404).json('user not found')
+        // Cek apakah password baru diberikan
+        let hashPassword;
+        if (password) {
+            hashPassword = await bycript.hash(password, saltRound);
         }
 
-        users.name = name
-        users.email = email
-        users.password = password
-        users.numberPhone = numberPhone
-        users.age = age
-        users.updatedAt = new Date();
-        await users.save()
+        // Temukan pengguna berdasarkan ID
+        const user = await User.findByPk(id);
 
-        return res.status(200).json('updated succesfully!')
+        if (!user) {
+            return res.status(404).json('User not found');
+        }
+
+        // Update data pengguna
+        user.name = name || user.name;
+        user.email = email || user.email;
+        if (password) {
+            user.password = hashPassword;
+        }
+        user.numberPhone = numberPhone || user.numberPhone;
+        user.age = age || user.age;
+        user.updatedAt = new Date();
+
+        // Simpan perubahan
+        await user.save();
+
+        return res.status(200).json('User updated successfully!');
     } catch (error) {
-        console.log(error)
-        res.status(500).json({error: "updated failed!"})
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update user!' });
     }
-}
+};
 
 module.exports = {
   getUser,
